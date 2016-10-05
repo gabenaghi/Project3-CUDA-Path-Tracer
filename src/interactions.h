@@ -99,7 +99,7 @@ void scatterRay(
 		if (!m.hasReflective)
 			return;
 		direction = glm::reflect(pathSegment.ray.direction, normal);
-		color = m.color;
+		color = m.specular.color;
 		//GABE: use schlink's approximation?
 	}
 

@@ -172,6 +172,8 @@ __global__ void computeIntersections(
 		glm::vec3 tmp_intersect;
 		glm::vec3 tmp_normal;
 
+		pathSegment.remainingBounces--;
+
 		// naive parse through global geoms
 
 		for (int i = 0; i < geoms_size; i++)
@@ -202,6 +204,7 @@ __global__ void computeIntersections(
 		if (hit_geom_index == -1)
 		{
 			intersections[path_index].t = -1.0f;
+			pathSegment.remainingBounces = -1;
 		}
 		else
 		{
@@ -258,7 +261,6 @@ __global__ void shadeMaterial (
 			intersection.surfaceNormal,
 			material,
 			rng);
-        //pathSegments[idx].color *= u01(rng); // apply some noise because why not
       }
     // If there was no intersection, color the ray black.
     // Lots of renderers use 4 channel color, RGBA, where A = alpha, often
@@ -283,12 +285,12 @@ __global__ void finalGather(int nPaths, glm::vec3 * image, PathSegment * iterati
 }
 
 // stream compaction predicate function
-struct ray_terminated
+struct path_terminated
 {
 	__host__ __device__
-		bool operator()(const ShadeableIntersection s)
+		bool operator()(const PathSegment s)
 	{
-		return (s.t == -1);
+		return (s.remainingBounces < 0);
 	}
 };
 
@@ -372,6 +374,9 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		cudaDeviceSynchronize();
 		depth++;
 
+		//compact away paths with no remaining bounces
+		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		num_paths = dev_path_end - dev_paths;
 
 		// TODO:
 		// --- Shading Stage ---
@@ -390,10 +395,8 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 			dev_materials
 			);
 
-
-		//thrust::device_vector <ShadeableIntersection> vec = dev_intersections;
-		//thrust::remove_if();
-		iterationComplete = true; // TODO: should be based off stream compaction results.
+		if (num_paths == 0)
+			iterationComplete = true; // TODO: should be based off stream compaction results.
 		//GABE how about maxdepth?
 	}
 
