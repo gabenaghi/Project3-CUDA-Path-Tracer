@@ -2,6 +2,8 @@
 
 #include "intersections.h"
 
+#define epsilon  1.0e-3f
+
 // CHECKITOUT
 /**
  * Computes a cosine-weighted random direction in a hemisphere.
@@ -69,11 +71,41 @@ glm::vec3 calculateRandomDirectionInHemisphere(
 __host__ __device__
 void scatterRay(
 		PathSegment & pathSegment,
-        glm::vec3 intersect,
+		float t,
         glm::vec3 normal,
         const Material &m,
         thrust::default_random_engine &rng) {
-    // TODO: implement this.
     // A basic implementation of pure-diffuse shading will just call the
     // calculateRandomDirectionInHemisphere defined above.
+
+	thrust::uniform_real_distribution<float> u01(0, 1);
+	glm::vec3 color;
+	glm::vec3 direction;
+	
+	
+	float coinToss = u01(rng);
+
+	if (coinToss < 0.5f)
+	{
+		//diffuse
+		if (!m.hasRefractive)
+			return;
+		direction = calculateRandomDirectionInHemisphere(normal, rng);
+		color = m.color * pathSegment.color;
+	}
+	else
+	{
+		//specular
+		if (!m.hasReflective)
+			return;
+		direction = glm::reflect(pathSegment.ray.direction, normal);
+		color = m.color;
+		//GABE: use schlink's approximation?
+	}
+
+	color = color * 2.0f; // same as divide by 0.5
+
+	pathSegment.color = color;
+	pathSegment.ray.origin = getPointOnRay(pathSegment.ray, t - epsilon);
+	pathSegment.ray.direction = direction;
 }
