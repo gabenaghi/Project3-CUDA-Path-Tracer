@@ -376,6 +376,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 
 		//compact away paths with no remaining bounces
 		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		cudaDeviceSynchronize();
 		num_paths = dev_path_end - dev_paths;
 
 		// TODO:
@@ -394,6 +395,8 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 			dev_paths,
 			dev_materials
 			);
+		checkCUDAError("shade material");
+		cudaDeviceSynchronize();
 
 		if (num_paths == 0)
 			iterationComplete = true; // TODO: should be based off stream compaction results.
