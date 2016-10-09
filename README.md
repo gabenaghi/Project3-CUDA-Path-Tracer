@@ -43,6 +43,18 @@ Much better, but not quite. The image didn't stabilize at this point either. It 
 
 ![](img/cornell_basic_working.png)
 
+####Stream Compaction
+
+I fell into the trap reported in the google group: thrust::remove_if does not move the "removed" elements to the end of the array per se. So my initial implementation looked like this: 
+
+![](img/cornell_inital_compact.png)
+
+We see here a lot of the color concentration nastiness observed in the first picture above.
+
+The solution was to rather use thrust::partition, moving the elements with bounces left to the front of the array while pushing those which had already bottomed out to the end of the array. The resulting image is even nicer than the bas implementation (for some reason) :
+
+![](img/cornell_partition_compact.png)
+
 ### Feature 1
 
 
