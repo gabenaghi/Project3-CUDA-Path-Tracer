@@ -172,8 +172,6 @@ __global__ void computeIntersections(
 		glm::vec3 tmp_intersect;
 		glm::vec3 tmp_normal;
 
-		pathSegment.remainingBounces--;
-
 		// naive parse through global geoms
 
 		for (int i = 0; i < geoms_size; i++)
@@ -209,6 +207,7 @@ __global__ void computeIntersections(
 		else
 		{
 			//The ray hits something
+			pathSegment.remainingBounces--;
 			intersections[path_index].t = t_min;
 			intersections[path_index].materialId = geoms[hit_geom_index].materialid;
 			intersections[path_index].surfaceNormal = normal;
@@ -290,7 +289,7 @@ struct path_terminated
 	__host__ __device__
 		bool operator()(const PathSegment s)
 	{
-		return (s.remainingBounces < 0);
+		return (s.remainingBounces < 0 || s.color == glm::vec3(0.0f));
 	}
 };
 
@@ -374,11 +373,6 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		cudaDeviceSynchronize();
 		depth++;
 
-		//compact away paths with no remaining bounces
-		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
-		cudaDeviceSynchronize();
-		num_paths = dev_path_end - dev_paths;
-
 		// TODO:
 		// --- Shading Stage ---
 		// Shade path segments based on intersections and generate new rays by
@@ -398,7 +392,12 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		checkCUDAError("shade material");
 		cudaDeviceSynchronize();
 
-		if (num_paths == 0)
+		//compact away paths with no remaining bounces
+		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		cudaDeviceSynchronize();
+		num_paths = dev_path_end - dev_paths;
+
+		if (num_paths <= 0 || depth > traceDepth)
 			iterationComplete = true; // TODO: should be based off stream compaction results.
 		//GABE how about maxdepth?
 	}

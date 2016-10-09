@@ -2,7 +2,7 @@
 
 #include "intersections.h"
 
-#define epsilon  1.0e-3f
+#define epsilon  1.5e-2f
 
 // CHECKITOUT
 /**
