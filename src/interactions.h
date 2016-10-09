@@ -91,7 +91,7 @@ void scatterRay(
 		if (!m.hasRefractive)
 			return;
 		direction = calculateRandomDirectionInHemisphere(normal, rng);
-		color = m.color * pathSegment.color;
+		color = pathSegment.color * m.color;
 	}
 	else
 	{
@@ -99,7 +99,7 @@ void scatterRay(
 		if (!m.hasReflective)
 			return;
 		direction = glm::reflect(pathSegment.ray.direction, normal);
-		color = m.specular.color;
+		color = pathSegment.color * m.specular.color;
 		//GABE: use schlink's approximation?
 	}
 
