@@ -16,6 +16,7 @@
 #include "interactions.h"
 
 #define ERRORCHECK 1
+#define STREAM_COMPACT 1
 
 #define FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define checkCUDAError(msg) checkCUDAErrorFn(msg, FILENAME, __LINE__)
@@ -400,10 +401,12 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		checkCUDAError("shade material");
 		cudaDeviceSynchronize();
 
-		//compact away paths with no remaining bounces
-		//dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
-		//cudaDeviceSynchronize();
-		//num_paths = dev_path_end - dev_paths;
+#if STREAM_COMPACT
+		// compact away paths with no remaining bounces
+		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		cudaDeviceSynchronize();
+		num_paths = dev_path_end - dev_paths;
+#endif
 
 		if (num_paths <= 0 || depth > traceDepth)
 			iterationComplete = true;
