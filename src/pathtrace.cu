@@ -408,7 +408,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		num_paths = dev_path_end - dev_paths;
 #endif
 
-		if (num_paths <= 0 || depth > traceDepth)
+		if (num_paths <= 0)
 			iterationComplete = true;
 	}
 
