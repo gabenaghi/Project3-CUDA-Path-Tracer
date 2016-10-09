@@ -3,8 +3,7 @@
 #include <cmath>
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
-#include <thrust/remove.h>
-#include <thrust/device_vector.h>
+#include <thrust/partition.h>
 
 #include "sceneStructs.h"
 #include "scene.h"
@@ -293,12 +292,12 @@ __global__ void finalGather(int nPaths, glm::vec3 * image, PathSegment * iterati
 }
 
 // stream compaction predicate function
-struct path_terminated
+struct path_not_terminated
 {
 	__host__ __device__
 		bool operator()(const PathSegment s)
 	{
-		return (s.remainingBounces < 0);
+		return (s.remainingBounces >= 0);
 	}
 };
 
@@ -403,12 +402,12 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 
 #if STREAM_COMPACT
 		// compact away paths with no remaining bounces
-		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		dev_path_end = thrust::partition(thrust::device, dev_paths, dev_paths + num_paths, path_not_terminated());
 		cudaDeviceSynchronize();
 		num_paths = dev_path_end - dev_paths;
 #endif
 
-		if (num_paths <= 0)
+		if (num_paths <= 0 || depth > traceDepth)
 			iterationComplete = true;
 	}
 
