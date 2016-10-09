@@ -82,30 +82,8 @@ void scatterRay(
 	glm::vec3 color;
 	glm::vec3 direction;
 	
-	
-	float coinToss = u01(rng);
-
-	if (coinToss < 0.5f)
-	{
-		//diffuse
-		if (!m.hasRefractive)
-			return;
-		direction = calculateRandomDirectionInHemisphere(normal, rng);
-		color = pathSegment.color * m.color;
-	}
-	else
-	{
-		//specular
-		if (!m.hasReflective)
-			return;
-		direction = glm::reflect(pathSegment.ray.direction, normal);
-		color = pathSegment.color * m.specular.color;
-		//GABE: use schlink's approximation?
-	}
-
-	color = color * 2.0f; // same as divide by 0.5
-
-	pathSegment.color = color;
+    //try diffuse only 
+	pathSegment.color *= m.color;
 	pathSegment.ray.origin = getPointOnRay(pathSegment.ray, t - epsilon);
-	pathSegment.ray.direction = direction;
+	pathSegment.ray.direction = calculateRandomDirectionInHemisphere(normal, rng);
 }
