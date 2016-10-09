@@ -15,13 +15,11 @@ In addition to the challenging content of this course, I am faced with the addit
 For the basic path tracer, we were asked to implement a BSDF material shader and add stream compaction to optimize the ray tracer performace. 
 
 
-### Naive Parallel Implementation
+### Feature 1
 
 
-### Thrust Implementation 
+### Feature 2
 
 
 ## Performance Analysis
 
-
-## Test Suite Output
