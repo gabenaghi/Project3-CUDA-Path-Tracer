@@ -237,7 +237,7 @@ __global__ void shadeMaterial (
   {
 
     ShadeableIntersection intersection = shadeableIntersections[idx];
-    if (intersection.t > 0.0f) { // if the intersection exists...
+    if (intersection.t > 0.0f && pathSegments[idx].remainingBounces >= 0) { // if the intersection exists...
       // Set up the RNG
       // LOOK: this is how you use thrust's RNG! Please look at
       // makeSeededRandomEngine as well.
@@ -291,7 +291,7 @@ struct path_terminated
 	__host__ __device__
 		bool operator()(const PathSegment s)
 	{
-		return (s.remainingBounces < 0 || s.color == glm::vec3(0.0f));
+		return (s.remainingBounces < 0);
 	}
 };
 

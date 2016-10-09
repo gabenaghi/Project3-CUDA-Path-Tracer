@@ -2,7 +2,7 @@
 
 #include "intersections.h"
 
-#define epsilon  1.5e-2f
+#define epsilon  1e-3f
 
 // CHECKITOUT
 /**
@@ -84,6 +84,6 @@ void scatterRay(
 	
     //try diffuse only 
 	pathSegment.color *= m.color;
-	pathSegment.ray.origin = getPointOnRay(pathSegment.ray, t - epsilon);
+	pathSegment.ray.origin = getPointOnRay(pathSegment.ray, t) + epsilon * normal;
 	pathSegment.ray.direction = calculateRandomDirectionInHemisphere(normal, rng);
 }
