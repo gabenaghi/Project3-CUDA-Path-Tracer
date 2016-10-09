@@ -202,16 +202,15 @@ __global__ void computeIntersections(
 		if (hit_geom_index == -1)
 		{
 			intersections[path_index].t = -1.0f;
-			pathSegment.remainingBounces = -1;
 		}
 		else
 		{
 			//The ray hits something
-			pathSegment.remainingBounces -= 1;
 			intersections[path_index].t = t_min;
 			intersections[path_index].materialId = geoms[hit_geom_index].materialid;
 			intersections[path_index].surfaceNormal = normal;
 		}
+
 	}
 }
 
@@ -235,9 +234,14 @@ __global__ void shadeMaterial (
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < num_paths)
   {
+	
+	ShadeableIntersection intersection = shadeableIntersections[idx];
 
-    ShadeableIntersection intersection = shadeableIntersections[idx];
-    if (intersection.t > 0.0f && pathSegments[idx].remainingBounces >= 0) { // if the intersection exists...
+	if (pathSegments[idx].remainingBounces == -1)
+		return;
+
+	if (intersection.t > 0.0f) { // if the intersection exists...
+
       // Set up the RNG
       // LOOK: this is how you use thrust's RNG! Please look at
       // makeSeededRandomEngine as well.
@@ -248,7 +252,7 @@ __global__ void shadeMaterial (
       glm::vec3 materialColor = material.color;
 
       // If the material indicates that the object was a light, "light" the ray
-      if (material.emittance > 0.0f) { 
+	  if (material.emittance > 0.0f && pathSegments[idx].remainingBounces != -1) {
         pathSegments[idx].color *= (materialColor * material.emittance);
 		pathSegments[idx].remainingBounces = -1;
       }
@@ -262,6 +266,7 @@ __global__ void shadeMaterial (
 			intersection.surfaceNormal,
 			material,
 			rng);
+		  pathSegments[idx].remainingBounces -= 1;
       }
     // If there was no intersection, color the ray black.
     // Lots of renderers use 4 channel color, RGBA, where A = alpha, often
@@ -269,6 +274,7 @@ __global__ void shadeMaterial (
     // This can be useful for post-processing and image compositing.
     } else {
       pathSegments[idx].color = glm::vec3(0.0f);
+	  pathSegments[idx].remainingBounces = -1;
     }
   }
 }
@@ -357,6 +363,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	bool iterationComplete = false;
 
 	while (!iterationComplete) {
+
 		// clean shading chunks
 		cudaMemset(dev_intersections, 0, pixelcount * sizeof(ShadeableIntersection));
 
@@ -385,7 +392,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
  
 		shadeMaterial<<<numblocksPathSegmentTracing, blockSize1d>>> (
 			iter,
-			num_paths,
+			pixelcount,
 			dev_intersections,
 			dev_paths,
 			dev_materials
@@ -394,9 +401,9 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		cudaDeviceSynchronize();
 
 		//compact away paths with no remaining bounces
-		dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
-		cudaDeviceSynchronize();
-		num_paths = dev_path_end - dev_paths;
+		//dev_path_end = thrust::remove_if(thrust::device, dev_paths, dev_paths + num_paths, path_terminated());
+		//cudaDeviceSynchronize();
+		//num_paths = dev_path_end - dev_paths;
 
 		if (num_paths <= 0 || depth > traceDepth)
 			iterationComplete = true;
