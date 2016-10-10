@@ -2,7 +2,10 @@
 
 #include "intersections.h"
 
-#define epsilon  1e-1f
+#define epsilon  1e-3f
+
+#define SCHLICK 1
+#define HEMISPHERE 0
 
 // CHECKITOUT
 /**
@@ -14,6 +17,15 @@ glm::vec3 calculateRandomDirectionInHemisphere(
         glm::vec3 normal, thrust::default_random_engine &rng) {
     thrust::uniform_real_distribution<float> u01(0, 1);
 
+#if HEMISPHERE
+	float s = u01(rng);
+	float t = u01(rng);
+
+	float u = TWO_PI*s;
+	float v = sqrt(1-t);
+
+	return glm::vec3(v*cos(u), sqrt(t), v * sin(u));
+#else
     float up = sqrt(u01(rng)); // cos(theta)
     float over = sqrt(1 - up * up); // sin(theta)
     float around = u01(rng) * TWO_PI;
@@ -41,6 +53,7 @@ glm::vec3 calculateRandomDirectionInHemisphere(
     return up * normal
         + cos(around) * over * perpendicularDirection1
         + sin(around) * over * perpendicularDirection2;
+#endif
 }
 
 /**
@@ -89,10 +102,19 @@ thrust::default_random_engine &rng) {
 
 	if (m.hasReflective > 0.0f && m.hasRefractive > 0.0f)
 	{
+#if SCHLICK
+		float R0 = powf(((1.0f - m.indexOfRefraction) / (1.0f + m.indexOfRefraction)), 2);
+
+		float specular = R0 + (1 - R0)*powf((1 - glm::dot(normal, pathSegment.ray.direction)),5);
+		float diffuse = 1.0f - specular;
+		direction = specular * glm::reflect(pathSegment.ray.direction, normal)
+			+ diffuse * calculateRandomDirectionInHemisphere(normal, rng);
+#else
 		float diffuse = m.hasRefractive / (m.hasReflective + m.hasRefractive);
 		float specular = 1 - diffuse;
 		direction = specular * glm::reflect(pathSegment.ray.direction, normal)
 			+ diffuse * calculateRandomDirectionInHemisphere(normal, rng);
+#endif
 	}
 	else if (m.hasReflective > 0.0f)
 	{
