@@ -404,6 +404,9 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	// Shoot ray into scene, bounce between objects, push shading chunks
 
 	bool iterationComplete = false;
+#if CONTIGUOUS
+	bool contiguous = false;
+#endif
 
 	while (!iterationComplete) {
 
@@ -454,8 +457,12 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 #endif
 
 #if CONTIGUOUS
-		thrust::stable_sort_by_key(thrust::device, dev_intersections, dev_intersections + num_paths, dev_paths, order_materials());
-		cudaDeviceSynchronize();
+		if (!contiguous)
+		{
+			thrust::sort_by_key(thrust::device, dev_intersections, dev_intersections + num_paths, dev_paths, order_materials());
+			cudaDeviceSynchronize();
+			contiguous = true;
+		}
 #endif
 		// TODO:
 		// --- Shading Stage ---
