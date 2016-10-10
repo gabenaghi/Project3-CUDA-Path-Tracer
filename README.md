@@ -55,6 +55,18 @@ The solution was to rather use thrust::partition, moving the elements with bounc
 
 ![](img/cornell_partition_compact.png)
 
+####BSDF
+
+Another basic feature we were asked to implement was a BSDF shader. In essence, a BSDF shader combines spectral and diffuse shading. (The above images are pure-diffuse)
+
+It was entirely unuclear to me based on instructions what we were intended to do for this component. As far as I could tell, on a given iteration, we were supposed to randomly choose one of the two features, do the computation for that type, and divide by half (multipy by 2). But that resulted in this: 
+
+![](img/cornell_initial_spectral.png) 
+
+Luckily, @dgrosman was able to enlighten me as to a proper way to do this, taking the components proportionally if they existed. That turned out this nice image: 
+
+![](img/cornell_bsdf.png)
+
 ### Feature 1
 
 
