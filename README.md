@@ -75,7 +75,14 @@ This can be avoided by ensuring that adjacent threads (nearly) always take the s
 
 The way to do this is to sort the paths and intersections arrays by material ID. I was able to do this using a very simple thrust::sort_by_key call, using intersctions as keys and comparing them based on their material ID, while using the paths as values. 
 
-It seems that some individuals had trouble with this optimization, saying that it in fact caused their iterations to take longer. If I had to guess, I would say that they were probably attempting to run the sort on each bounce. While this is potentially what the assignment had in mind, I believe there is greater potential in sorting the first or the first couple arrays only, where the number of arrays which will be processed in the shader is far greater (assuming stream compaction is used.)
+Many individuals had trouble with this optimization, saying that it in fact caused their iterations to take longer. Indeed, I found the same problem to be present in my performance analysis:
+
+![](img/material_sort_duration.png)
+
+
+At first, I thought I could be this problem by selectively applying the material sort. Id made sense to me that when there are a large number of paths present, this would be most helpful. But alas, analysis revealed that any number of sortions negatively impacted performance. 
+
+![](img/sort_compact_times.png)
 
 ### Feature 1.1- Schlick Approximation
 
@@ -116,4 +123,13 @@ Unfortunatly, although this may be an efficient implementation, it doesnt look v
 ![](img/cornell_hemisphere.png)
 
 ## Performance Analysis
+
+Stream compaction was definitely one of the more significant optimizations made over the course of this project. It is interesting how the effect varies from scene to scene. For example, in the Cornell scene, Stream Compaction is significant but only wittles away a relatively small number of paths per iteration. On the other hand, on an open scene like the Sphere, Stream compaction immidately removes all the paths, which have been terminated. 
+
+![](img/path_numbers.png)
+
+Indeed the duratin of a single iteration is sharply reduced by the compaction of paths. 
+
+![](img/stream_compaction_duration.png)
+
 
