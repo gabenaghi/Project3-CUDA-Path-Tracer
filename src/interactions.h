@@ -70,20 +70,40 @@ glm::vec3 calculateRandomDirectionInHemisphere(
  */
 __host__ __device__
 void scatterRay(
-		PathSegment & pathSegment,
-		float t,
-        glm::vec3 normal,
-        const Material &m,
-        thrust::default_random_engine &rng) {
-    // A basic implementation of pure-diffuse shading will just call the
-    // calculateRandomDirectionInHemisphere defined above.
+PathSegment & pathSegment,
+float t,
+glm::vec3 normal,
+const Material &m,
+thrust::default_random_engine &rng) {
+	// A basic implementation of pure-diffuse shading will just call the
+	// calculateRandomDirectionInHemisphere defined above.
 
 	thrust::uniform_real_distribution<float> u01(0, 1);
 	glm::vec3 color;
 	glm::vec3 direction;
-	
-    //try diffuse only 
+
+
 	pathSegment.color *= m.color;
 	pathSegment.ray.origin = getPointOnRay(pathSegment.ray, t) + epsilon * normal;
-	pathSegment.ray.direction = calculateRandomDirectionInHemisphere(normal, rng);
+
+
+	if (m.hasReflective > 0.0f && m.hasRefractive > 0.0f)
+	{
+		float diffuse = m.hasRefractive / (m.hasReflective + m.hasRefractive);
+		float specular = 1 - diffuse;
+		direction = specular * glm::reflect(pathSegment.ray.direction, normal)
+			+ diffuse * calculateRandomDirectionInHemisphere(normal, rng);
+	}
+	else if (m.hasReflective > 0.0f)
+	{
+		//reflect
+		direction = glm::reflect(pathSegment.ray.direction, normal);
+	}
+	else
+	{
+		//diffuse
+		direction = calculateRandomDirectionInHemisphere(normal, rng);
+	}
+
+	pathSegment.ray.direction = direction;
 }
