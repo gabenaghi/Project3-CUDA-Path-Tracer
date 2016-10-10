@@ -67,6 +67,16 @@ Luckily, @dgrosman was able to enlighten me as to a proper way to do this, takin
 
 ![](img/cornell_bsdf.png)
 
+#### Contiguous Memory Optimization
+
+One problem faced by our shader is the possibility of branching in adjacent threads in a warp. This leads to inefficiencies because all threads must wait for all other threads in a warp, so incongruous execution is costly. 
+
+This can be avoided by ensuring that adjacent threads (nearly) always take the same branch. In the case of our shader, that means making sure that the material properties and thus shading algorithm is the same. 
+
+The way to do this is to sort the paths and intersections arrays by material ID. I was able to do this using a very simple thrust::sort_by_key call, using intersctions as keys and comparing them based on their material ID, while using the paths as values. 
+
+It seems that some individuals had trouble with this optimization, saying that it in fact caused their iterations to take longer. If I had to guess, I would say that they were probably attempting to run the sort on each bounce. While this is potentially what the assignment had in mind, I believe there is greater potential in sorting the first or the first couple arrays only, where the number of arrays which will be processed in the shader is far greater (assuming stream compaction is used.)
+
 ### Feature 1.1- Schlick Approximation
 
 For my first personal feature, I implmemented Schlick's approximation of the Fresnel factor -- in essence, it allows us to accurately model the specular reflection of light between media. This is made easier in our case, since one of the two media is alwasys air, which has idex of refreaction of 1. So our equaitions are:
