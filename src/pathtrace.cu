@@ -4,6 +4,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/partition.h>
+#include <thrust/sort.h>
 
 #include "sceneStructs.h"
 #include "scene.h"
@@ -16,7 +17,7 @@
 
 #define ERRORCHECK 1
 #define STREAM_COMPACT 1
-#define CONTIGUOUS 0
+#define CONTIGUOUS 1
 #define CACHE_FIRST 0
 
 #define FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
@@ -303,6 +304,17 @@ __global__ void finalGather(int nPaths, glm::vec3 * image, PathSegment * iterati
 	}
 }
 
+#if CONTIGUOUS
+struct order_materials
+{
+	__host__ __device__
+	bool operator()(const ShadeableIntersection left, const ShadeableIntersection right)
+	{
+		return (left.materialId < right.materialId);
+	}
+};
+#endif
+
 // stream compaction predicate function
 struct path_not_terminated
 {
@@ -439,6 +451,11 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		checkCUDAError("trace one bounce");
 		cudaDeviceSynchronize();
 		depth++;
+#endif
+
+#if CONTIGUOUS
+		thrust::stable_sort_by_key(thrust::device, dev_intersections, dev_intersections + num_paths, dev_paths, order_materials());
+		cudaDeviceSynchronize();
 #endif
 		// TODO:
 		// --- Shading Stage ---
