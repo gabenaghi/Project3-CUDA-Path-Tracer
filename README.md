@@ -67,11 +67,43 @@ Luckily, @dgrosman was able to enlighten me as to a proper way to do this, takin
 
 ![](img/cornell_bsdf.png)
 
-### Feature 1
+### Feature 1.1- Schlick Approximation
+
+For my first personal feature, I implmemented Schlick's approximation of the Fresnel factor -- in essence, it allows us to accurately model the specular reflection of light between media. This is made easier in our case, since one of the two media is alwasys air, which has idex of refreaction of 1. So our equaitions are:
+
+~~~
+R(theta) = R0 + (1 - R0)(1 - cos(theta))^5
+R0 = ((1 - refraction_index)/(1 + refraction_index))^2
+cos(theta) = dot(normal, ray_direction)
+~~~ 
+
+This is easily caclulable since normal, ray\_direction, and refraction_index are readily available in the shader. 
+
+***non purely spectral image here***
+
+### Feature 1.2- Anti Aliasing
+***Not completed***
 
 
-### Feature 2
+### Feature 2- Hemisphere Sampling
 
+In our ray scattering function, we what to scatter rays in a cosine-weighted hemisphere when refrating from a diffuse surface. 
+
+The way to do this as described by [UCSD Graphics](http://graphics.ucsd.edu/courses/cse168_s14/ucsd/CSE168_11_Random.pdf) is as follows:
+
+~~~
+Choose a random point (s,t)
+u = 2πs
+v = sqrt(1-t)
+
+px = v * cos(u)
+py = sqrt(t)
+pz = v * sin(u)
+~~~
+
+Unfortunatly, although this may be an efficient implementation, it doesnt look very good. Here is an image with the new cosine-weighted hemisphere sampling:
+
+![](img/cornell_hemisphere.png)
 
 ## Performance Analysis
 
